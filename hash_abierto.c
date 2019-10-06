@@ -1,11 +1,24 @@
-#inlcude "hash.h"
-#DEFINE TAM 32
+#include "hash.h"
+#include "lista.h"
+const int primos[] = {41,101,211,401,809,1601,3209,6421,12809,25603,50021,100003,200003,
+400009,800011};
+
 
 
 typedef campo campo_t{
 	char* clave;
 	void* valor;
 };
+
+campo_t* campo_crear(clave,valor){
+	campo_t* campo = malloc(sizeof(campo_t));
+	if(campo==NULL){
+		return NULL;
+	}
+	campo->valor=valor;
+	campo->clave=clave;
+	return campo;
+}
 
 struct hash hash_t{
 	lista_t** listas;
@@ -33,7 +46,8 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 		return NULL;
 	}
 	hash->cantidad = 0;
-	hash->capacidad = TAM;
+	hash->capacidad = TAM;}
+	hash->
 }
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
@@ -44,18 +58,11 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	}		
 	int pos=hashing(clave,hash);
 	
-	campo_t* campo = malloc(sizeof(campo_t));
-	if(campo==NULL){
-		return NULL;
-	}
-	campo->valor=dato;
-	campo->clave=clave;
-	
-	if (hash->listas[pos]==NULL){
-		hash->listas[pos]=malloc(sizeof(lista_t));
-		if(hash->listas[pos]==NULL){
-			return NULL;
-		}
+	campo_t* campo = campo_crear(clave,dato);
+	if (campo == NULL)return NULL;
+	if (hash->listas[pos] == NULL){
+		hash->listas[pos] = lista_crear());
+		if(hash->listas[pos] == NULL)return NULL;
 	}
 	if(!lista_insertar_ultimo(hash->listas[pos],campo)){
 		return NULL;
@@ -70,33 +77,59 @@ void *hash_borrar(hash_t *hash, const char *clave){
 			return NULL;
 		}
 	}
-	if((hash->listas[pos]==NULL)||(lista_esta_vacia(hash->listas[pos]))){
+	int pos = hashing(clave,hash);
+	if((lista_esta_vacia(hash->listas[pos]))){
 		return NULL;
 	}
-	if(lista_ver_primero(hash->listas[pos])->clave == clave){
-		return lista_borrar_primero(hash->listas[pos])->valor;
+	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
+	while(!lista_iter_al_final(iter) && lista_iter_ver_actual(iter)->dato->clave != clave){
+		lista_iter_avanzar(iter);
 	}
-	cantidad--;
+	if (lista_iter_al_final(iter))return NULL;
+	hash->cantidad --;
+	return lista_iter_borrar(iter);
+	
 }
 
 void *hash_obtener(const hash_t *hash, const char *clave){
 	int pos = hashing(clave,hash);
 	
-	if((hash->listas[pos]==NULL)||(lista_esta_vacia(hash->listas[pos]))){
+	if((lista_esta_vacia(hash->listas[pos]))){
 		return NULL;
 	}
-	if(lista_ver_primero(hash->listas[pos])->clave == clave){
-		return lista_ver_primero(hash->lista[pos])->valor;
+	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
+	while(!lista_iter_al_final(iter) && lista_iter_ver_actual(iter)->dato->clave != clave){
+		lista_iter_avanzar(iter);
 	}
-}	
-	
-	
-	
-bool hash_pertenece(const hash_t *hash, const char *clave);
-size_t hash_cantidad(const hash_t *hash);
-void hash_destruir(hash_t *hash);
+	if (lista_iter_al_final(iter))return NULL;
+	return lista_iter_ver_actual(iter);
+}		
+bool hash_pertenece(const hash_t *hash, const char *clave){
+	return (hash_obtener(hash,clave)!= NULL);
+}
 
-bool hash_redimensionar(){
+size_t hash_cantidad(const hash_t *hash){
+	return hash->cantidad;
+}
+
+void hash_destruir(hash_t *hash){
+
+}
+
+bool hash_redimensionar(hash){
+	
+	if (hash->capacidad <= 800011){
+		sizeof dim = 0
+		for (i=0 ; i<15; i++){
+			if (primos[i]==capacidad;
+			dim = i+1;
+		}
+		lista_t** listas_nuevo = malloc(dim*sizeof(lista_t*))
+	}else{
+		lista_t** listas_nuevo = malloc(2*sizeof(lista_t*))
+	}
+
+}
 
 hash_iter_t *hash_iter_crear(const hash_t *hash);
 bool hash_iter_avanzar(hash_iter_t *iter);
