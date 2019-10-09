@@ -10,7 +10,7 @@
 const int primos[] = {41,101,211,401,809,1601,3209,6421,12809,25603,50021,100003,200003,
 400009,800011};
 
-MODIFICADO
+
 
 
 typedef struct campo{
@@ -125,11 +125,16 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	bool insertado = false;
 	while(!lista_iter_al_final(iter)){
 		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
-			hash->destruir_dato((*(campo_t*)lista_iter_borrar(iter)).valor);
+			hash->cantidad --;
+			campo_t* borrado = ((*(campo_t*)lista_iter_borrar(iter)).valor);
+			if(hash->destruir_dato !=NULL){
+				hash->destruir_dato(borrado->valor);
+				insertado = true;
+			}
 			if(!lista_iter_insertar(iter,campo))return false;
 			insertado = true;
-		}
-			lista_iter_avanzar(iter);
+			}
+		lista_iter_avanzar(iter);
 	}
 	if(!insertado){			
 		if(!lista_iter_insertar(iter,campo)){

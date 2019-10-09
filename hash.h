@@ -14,7 +14,7 @@ typedef struct hash_iter hash_iter_t;
 // tipo de función para destruir dato
 typedef void (*hash_destruir_dato_t)(void *);
 
-bool hash_redimensionar(hash_t* hash);
+bool hash_redimensionar(hash_t* hash,int redimension);
 
 /* Crea el hash
  */
