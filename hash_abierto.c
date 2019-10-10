@@ -23,8 +23,8 @@ campo_t* campo_crear(const char* clave, void* valor){
 	if(campo==NULL){
 		return NULL;
 	}
-	campo->valor=valor;
-	campo->clave=clave;
+	campo->valor = valor;
+	campo->clave = clave;
 	return campo;
 }
 
@@ -42,26 +42,25 @@ struct hash_iter{
     const hash_t* hash;
 };
 
-size_t hashing(const char *cad, size_t largo){
-   size_t valor;
-  const char *c;
+/*size_t hashing(const char *cad, size_t largo){
+	size_t valor;
+	const char *c;
 
-   for(c=cad,valor=0;*c;c++){
-      valor+=(size_t)(*c);
+	for(c=cad,valor=0;*c;c++){
+		valor+=(size_t)(*c);
 	}
-   return(valor%largo);
-}
+	return(valor%largo);
+}*/
 
-/*unsigned long hashing(const char *str){
-	unsigned long hashing = 5381;
+size_t hashing(const char *str, size_t largo){
+	size_t hashing = 5381;
 	int c = *str++;
 
 	while (c == *str++){
-		c = *str++;
 		hashing = ((hashing << 5) + hashing) + c; // hashing * 33 + c 
 	}
-	return hashing;
- }*/
+	return (hashing%largo);
+ }
 
 /*****************************************************************
  *                         PRIMITIVAS HASH                       *
@@ -126,14 +125,14 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	while(!lista_iter_al_final(iter)){
 		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
 			hash->cantidad --;
-			campo_t* borrado = ((*(campo_t*)lista_iter_borrar(iter)).valor);
-			if(hash->destruir_dato !=NULL){
+			campo_t* borrado = (((campo_t*)lista_iter_borrar(iter)));
+			if(hash->destruir_dato != NULL){
 				hash->destruir_dato(borrado->valor);
-				insertado = true;
 			}
+			free(borrado);
 			if(!lista_iter_insertar(iter,campo))return false;
 			insertado = true;
-			}
+		}
 		lista_iter_avanzar(iter);
 	}
 	if(!insertado){			
@@ -164,7 +163,10 @@ void *hash_borrar(hash_t *hash, const char *clave){
 		return NULL;
 	}
 	hash->cantidad--;
-	return ((campo_t*)lista_iter_borrar(iter))->valor;
+	campo_t* borrado = ((campo_t*)lista_iter_borrar(iter));
+	void* valor = borrado->valor;
+	free(borrado);
+	return valor;
 }
 
 void *hash_obtener(const hash_t *hash, const char *clave){
@@ -197,11 +199,13 @@ size_t hash_cantidad(const hash_t *hash){
 
 void hash_destruir(hash_t *hash){
 	for(size_t i = 0 ; i<hash->cantidad ; i++){
-		/*while(!lista_esta_vacia(hash->listas[i])){
+		while(!lista_esta_vacia(hash->listas[i])){
 			campo_t* campo = (campo_t*)lista_borrar_primero(hash->listas[i]);
-		//	hash->destruir_dato(campo->valor);
+			if(hash->destruir_dato!=NULL){
+				hash->destruir_dato(campo->valor);
+			}
 			free(campo);
-		}*/
+		}
 		lista_destruir(hash->listas[i],NULL);
 	}
 	free(hash);
@@ -230,15 +234,25 @@ bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 		free(listas_nuevo);
 		return false;
 	}
-	size_t i = 0;
-	while(!hash_iter_al_final(hash_iter)){
-		if(hash->listas[i]!=NULL){
-			i++;
-		}else{
+	//size_t i = 0;
+	for(size_t n = 0; n<TAM_NUEVO ; n++){
+		listas_nuevo[n] = lista_crear();
+		//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+		//liberar las que ya estan creadas
+		if(!listas_nuevo[n]){
+			for(n=n ; n > 0 ; n--){
+				free(listas_nuevo[n]);
+			}
+			free(listas_nuevo);	
+			return NULL;
+		}
+	}	
+	for(size_t i = 0; i<hash->capacidad ; i++){//while(!hash_iter_al_final(hash_iter)){
+		while(!lista_esta_vacia(hash->listas[i])){
 			lista_iter_t* lista_iter = lista_iter_crear(hash->listas[i]);
 			if(!lista_iter){
 				free (listas_nuevo);
-				hash_iter_destruir(hash_iter);
+				//hash_iter_destruir(hash_iter);
 				return false;
 			}
 			while(!lista_iter_al_final(lista_iter)){//lista_esta_vacia
@@ -247,15 +261,14 @@ bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 				size_t pos = hashing(campo->clave,TAM_NUEVO);
 				if(!lista_insertar_ultimo(listas_nuevo[pos],campo))return false;
 				lista_iter_avanzar(lista_iter);
-				hash_iter_avanzar(hash_iter);
+				//hash_iter_avanzar(hash_iter);
 			
 			}
 			lista_destruir(hash->listas[i],NULL);
 			lista_iter_destruir(lista_iter);
-			i++;
 		}
 	}
-	hash_iter_destruir(hash_iter);
+	//hash_iter_destruir(hash_iter);
 	hash->listas = listas_nuevo;
 	hash->capacidad = TAM_NUEVO;
 	return true;
@@ -269,8 +282,9 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 		size_t dim = 0;
 		if (hash->capacidad <= 800011){
 			for (int i=0 ; i<15; i++){
-				if (primos[i]==hash->capacidad);
+				if(primos[i]==hash->capacidad){
 				dim = i+1;
+				}
 			}
 			
 			lista_t** listas_nuevo = malloc(primos[dim]*sizeof(lista_t*));
