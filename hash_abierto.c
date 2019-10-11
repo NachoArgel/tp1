@@ -102,8 +102,11 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 			return false;
 		}
 	}		
-		
-	campo_t* campo = campo_crear(clave,dato);
+
+	//const char copia = *clave;
+	//const char* copia_ptr = &copia;
+
+	campo_t* campo = campo_crear(clave,dato);//campo_ptr,dato
 	if (campo == NULL)return false;
 	
 	size_t pos=hashing(clave,hash->capacidad);
@@ -178,6 +181,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
 	if(!iter)return NULL;
 	
 	while(!lista_iter_al_final(iter)){
+		//const char* copia = ((campo_t*)lista_iter_ver_actual(iter))->clave;
 		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
 			void* valor = ((campo_t*)lista_iter_ver_actual(iter))->valor;
 			lista_iter_destruir(iter);
@@ -200,7 +204,8 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
 	if(!iter)return NULL;
 	
 	while(!lista_iter_al_final(iter)){
-		if(((campo_t*)lista_iter_ver_actual(iter))->clave==clave){
+		//const char* copia = ((campo_t*)lista_iter_ver_actual(iter))->clave;
+		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
 			lista_iter_destruir(iter);
 			return true;
 		}else{
@@ -378,6 +383,7 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 		if(!hash_iter->iter_lista){
 			free(hash_iter);
 			return NULL;
+		}
 	}
 	return hash_iter;
 }	
@@ -387,15 +393,13 @@ bool hash_iter_avanzar(hash_iter_t *iter){
 	if(hash_iter_al_final(iter))return false;
 	
 	iter->iterados++;
-	
-	if(lista_iter_al_final(iter->iter_lista)){
+
+	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){
 		lista_iter_destruir(iter->iter_lista);
 		iter->pos++;
-		while(lista_esta_vacia(iter->hash->listas[iter->pos])&&!hash_iter_al_final(iter)){
+		while(lista_esta_vacia(iter->hash->listas[iter->pos]) && iter->pos < iter->hash->capacidad){
 			iter->pos++;
 		}
-		//if(hash_iter_al_final(iter)){
-			
 		iter->iter_lista = lista_iter_crear(iter->hash->listas[iter->pos]);
 		if(!iter->iter_lista)return false;
 	}else{
@@ -405,10 +409,10 @@ bool hash_iter_avanzar(hash_iter_t *iter){
 }
 
 const char *hash_iter_ver_actual(const hash_iter_t *iter){
+	
 	if(iter->hash->cantidad==0){
 		return NULL;
 	}
-	if(hash_iter_al_final(iter))return NULL;
 	return ((campo_t*)lista_iter_ver_actual(iter->iter_lista))->clave;
 }
 
