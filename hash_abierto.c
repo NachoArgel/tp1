@@ -306,7 +306,6 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 					dim = i+redimension;//si es achicar le resta 1 y si es agrandar le suma 1
 				}
 			}
-			
 			//lista_t** listas_nuevo = malloc(primos[dim]*sizeof(lista_t*));
 			//if(listas_nuevo==NULL)return false;
 			return hash_copiar(hash,primos[dim]/*,listas_nuevo*/);
@@ -375,7 +374,7 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 		hash_iter->iter_lista = NULL;
 	}else{
 		size_t i = 0;
-		while(lista_esta_vacia(hash->listas[i]) && i < hash_iter->hash->capacidad){
+		while(lista_esta_vacia(hash->listas[i]) && i < hash_iter->hash->capacidad-1){
 			i++;
 		}
 		hash_iter->pos = i;
@@ -391,13 +390,11 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 bool hash_iter_avanzar(hash_iter_t *iter){
 	
 	if(hash_iter_al_final(iter))return false;
-	
-	iter->iterados++;
 
 	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){
 		lista_iter_destruir(iter->iter_lista);
 		iter->pos++;
-		while(lista_esta_vacia(iter->hash->listas[iter->pos]) && iter->pos < iter->hash->capacidad){
+		while(iter->pos < iter->hash->capacidad-1 && lista_esta_vacia(iter->hash->listas[iter->pos])){
 			iter->pos++;
 		}
 		iter->iter_lista = lista_iter_crear(iter->hash->listas[iter->pos]);
@@ -405,12 +402,13 @@ bool hash_iter_avanzar(hash_iter_t *iter){
 	}else{
 		if(!lista_iter_avanzar(iter->iter_lista)) return false;
 	}
+	iter->iterados++;
 	return true;
 }
 
 const char *hash_iter_ver_actual(const hash_iter_t *iter){
 	
-	if(iter->hash->cantidad==0){
+	if(hash_iter_al_final(iter)){
 		return NULL;
 	}
 	return ((campo_t*)lista_iter_ver_actual(iter->iter_lista))->clave;
