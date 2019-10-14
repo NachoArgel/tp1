@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-
+#include <string.h>
 //#define TAM 32
 #define achicar -1
 #define agrandar 1
@@ -18,13 +18,28 @@ typedef struct campo{
 	void* valor;
 }campo_t;
 
+char *copiar_clave(const char *clave)
+{
+    char *copia = malloc(strlen(clave)+1);
+    if (copia == NULL){
+        return NULL;
+	}
+    strcpy(copia, clave);
+    return copia;
+}
+
 campo_t* campo_crear(const char* clave, void* valor){
 	campo_t* campo = malloc(sizeof(campo_t));
 	if(campo==NULL){
 		return NULL;
 	}
-	campo->valor=valor;
-	campo->clave=clave;
+	char* copia = copiar_clave(clave);
+	if (copia == NULL){
+		free (campo);
+		return NULL;
+	}
+	campo->valor = valor;
+	campo->clave = copia;
 	return campo;
 }
 
@@ -124,10 +139,10 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	//Creo un booleano para saber si ya inserte o no el valor
 	bool insertado = false;
 	while(!lista_iter_al_final(iter)){
-		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
+		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
 			hash->cantidad --;
-			campo_t* borrado = ((*(campo_t*)lista_iter_borrar(iter)).valor);
-			if(hash->destruir_dato !=NULL){
+			campo_t* borrado = ((lista_iter_borrar(iter)));
+			if(hash->destruir_dato){
 				hash->destruir_dato(borrado->valor);
 				insertado = true;
 			}
@@ -157,7 +172,7 @@ void *hash_borrar(hash_t *hash, const char *clave){
 		return NULL;
 	}
 	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
-	while(!lista_iter_al_final(iter)&&((campo_t*)lista_iter_ver_actual(iter))->clave != clave){
+	while(!lista_iter_al_final(iter)&&((strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) != 0))){
 		lista_iter_avanzar(iter);
 	}
 	if (lista_iter_al_final(iter)){
@@ -177,7 +192,7 @@ void *hash_obtener(const hash_t *hash, const char *clave){
 	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
 	
 	while(!lista_iter_al_final(iter)){
-		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
+		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
 			void* valor = ((campo_t*)lista_iter_ver_actual(iter))->valor;
 			lista_iter_destruir(iter);
 			return valor;
@@ -207,10 +222,10 @@ void hash_destruir(hash_t *hash){
 	free(hash);
 }
 
-/*
+
 bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
 	
-	if( TAM_NUEVO < TAM ){//Menor que el tamaño original
+	if( TAM_NUEVO < TAM[0] ){//Menor que el tamaño original
 				return false;
 	}
 				
@@ -221,7 +236,7 @@ bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
 		}else{
 			return hash_copiar(hash,TAM_NUEVO,listas_nuevo);
 		}
-}*/
+}
 
 bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 	
