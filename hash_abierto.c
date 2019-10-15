@@ -114,7 +114,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	
 	if(hash->cantidad == 2*hash->capacidad){
-		if(!hash_redimensionar(hash,1)){//agrandar
+		if(!hash_redimensionar(hash,agrandar)){
 			return false;
 		}
 	}		
@@ -165,7 +165,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 void *hash_borrar(hash_t *hash, const char *clave){
 	
 	if(hash->cantidad <= (hash->capacidad)/4){
-		hash_redimensionar(hash,-1/*achicar*/);
+		hash_redimensionar(hash,achicar);
 	}
 	size_t pos = hashing(clave,hash->capacidad);
 	if(lista_esta_vacia(hash->listas[pos])){
@@ -249,6 +249,37 @@ bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
 
 bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 	
+	size_t pos = 0;
+	size_t i = 0;
+	while(pos<=hash->cantidad){
+		if (lista_esta_vacia(hash->listas[i])){
+			pos++;
+		}else{
+			lista_iter_t* lista_iter = lista_iter_crear(hash->listas[i]);
+			if(!lista_iter){
+				free (listas_nuevo);
+				return false;
+			}
+			while(!lista_iter_al_final(lista_iter)){//lista_esta_vacia
+				
+				campo_t* campo = lista_iter_ver_actual(lista_iter);
+				size_t pos = hashing(campo->clave,TAM_NUEVO);
+				if(!lista_insertar_ultimo(listas_nuevo[pos],campo))return false;
+				lista_iter_avanzar(lista_iter);
+				pos++;
+			
+			}
+			lista_destruir(hash->listas[i],NULL);
+			lista_iter_destruir(lista_iter);
+		}
+		
+	}
+	hash->listas = listas_nuevo;
+	hash->capacidad = TAM_NUEVO;
+	return true;
+}
+/*bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
+	
 	hash_iter_t* hash_iter = hash_iter_crear(hash);
 	if(!hash_iter){
 		free(listas_nuevo);
@@ -283,7 +314,7 @@ bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 	hash->listas = listas_nuevo;
 	hash->capacidad = TAM_NUEVO;
 	return true;
-}
+}*/
 
 bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 	size_t dim = 0;
