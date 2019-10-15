@@ -33,7 +33,6 @@ campo_t* campo_crear(const char* clave, void* valor){
 	if(campo==NULL){
 		return NULL;
 	}
-<<<<<<< HEAD
 	char* copia = copiar_clave(clave);
 	if (copia == NULL){
 		free (campo);
@@ -41,10 +40,6 @@ campo_t* campo_crear(const char* clave, void* valor){
 	}
 	campo->valor = valor;
 	campo->clave = copia;
-=======
-	campo->valor = valor;
-	campo->clave = clave;
->>>>>>> 2cc1e5dfb8f7ed13e44b0e2c44f1f15adfbe90cd
 	return campo;
 }
 
@@ -63,23 +58,24 @@ struct hash_iter{
 };
 
 size_t hashing(const char *cad, size_t largo){
-	size_t valor;
-	const char *c;
+   size_t valor;
+   const char *c;
 
-	for(c=cad,valor=0;*c;c++){
-		valor+=(size_t)(*c);
+   for(c=cad,valor=0;*c;c++){
+      valor+=(size_t)(*c);
 	}
-	return(valor%largo);
+   return(valor%largo);
 }
 
-/*size_t hashing(const char *str, size_t largo){
-	size_t hashing = 5381;
+/*unsigned long hashing(const char *str){
+	unsigned long hashing = 5381;
 	int c = *str++;
 
 	while (c == *str++){
+		c = *str++;
 		hashing = ((hashing << 5) + hashing) + c; // hashing * 33 + c 
 	}
-	return (hashing%largo);
+	return hashing;
  }*/
 
 /*****************************************************************
@@ -122,11 +118,8 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 			return false;
 		}
 	}		
-
-	//const char copia = *clave;
-	//const char* copia_ptr = &copia;
-
-	campo_t* campo = campo_crear(clave,dato);//campo_ptr,dato
+		
+	campo_t* campo = campo_crear(clave,dato);
 	if (campo == NULL)return false;
 	
 	size_t pos=hashing(clave,hash->capacidad);
@@ -137,31 +130,32 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 		hash->cantidad++;
 		return true;
 	}	
-	
 	//Chequeo que no exista la clave que recibi, y de existir le actualizo el dato destruyendo el anterior
 	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
 	if(!iter){
 		free(campo);
 		return false;
 	}
+	//Creo un booleano para saber si ya inserte o no el valor
+	bool insertado = false;
 	while(!lista_iter_al_final(iter)){
-<<<<<<< HEAD
 		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
 			hash->cantidad --;
 			campo_t* borrado = ((lista_iter_borrar(iter)));
 			if(hash->destruir_dato){
-=======
-		if(((campo_t*)lista_iter_ver_actual(iter))->clave==clave){
-			hash->cantidad --;
-			campo_t* borrado = (((campo_t*)lista_iter_borrar(iter)));
-			if(hash->destruir_dato != NULL){
->>>>>>> 2cc1e5dfb8f7ed13e44b0e2c44f1f15adfbe90cd
 				hash->destruir_dato(borrado->valor);
+				insertado = true;
 			}
-			free(borrado);;
+			if(!lista_iter_insertar(iter,campo))return false;
+			insertado = true;
+			}
+		lista_iter_avanzar(iter);
+	}
+	if(!insertado){			
+		if(!lista_iter_insertar(iter,campo)){
+			return false;
 		}
 	}
-	if(!lista_iter_insertar(iter,campo))return false;
 	lista_iter_destruir(iter);
 
 	hash->cantidad++;	
@@ -173,10 +167,7 @@ void *hash_borrar(hash_t *hash, const char *clave){
 	if(hash->cantidad <= (hash->capacidad)/4){
 		hash_redimensionar(hash,-1/*achicar*/);
 	}
-	if(!hash_pertenece(hash,clave))return NULL;
-	
 	size_t pos = hashing(clave,hash->capacidad);
-	
 	if(lista_esta_vacia(hash->listas[pos])){
 		return NULL;
 	}
@@ -185,65 +176,42 @@ void *hash_borrar(hash_t *hash, const char *clave){
 		lista_iter_avanzar(iter);
 	}
 	if (lista_iter_al_final(iter)){
-		lista_iter_destruir(iter);
 		return NULL;
 	}
 	hash->cantidad--;
-	campo_t* borrado = ((campo_t*)lista_iter_borrar(iter));
-	void* valor = borrado->valor;
-	free(borrado);
-	lista_iter_destruir(iter);
-	return valor;
+	return ((campo_t*)lista_iter_borrar(iter))->valor;
 }
 
 void *hash_obtener(const hash_t *hash, const char *clave){
-	
-	if(!hash_pertenece(hash,clave))return NULL;
+	if(hash->cantidad==0)return NULL;
 	
 	size_t pos = hashing(clave,hash->capacidad);
 	
 	if(lista_esta_vacia(hash->listas[pos]))return NULL;
 	
 	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
-	if(!iter)return NULL;
 	
 	while(!lista_iter_al_final(iter)){
-<<<<<<< HEAD
 		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
-=======
-		//const char* copia = ((campo_t*)lista_iter_ver_actual(iter))->clave;
-		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
->>>>>>> 2cc1e5dfb8f7ed13e44b0e2c44f1f15adfbe90cd
 			void* valor = ((campo_t*)lista_iter_ver_actual(iter))->valor;
 			lista_iter_destruir(iter);
 			return valor;
 		}
 		lista_iter_avanzar(iter);
 	}
-	lista_iter_destruir(iter);
 	return NULL;
 }		
 
 bool hash_pertenece(const hash_t *hash, const char *clave){
-	//return (hash_obtener(hash,clave) == NULL);
-	if(hash->cantidad==0)return false;
-	
-	size_t pos = hashing(clave,hash->capacidad);
-	if(lista_esta_vacia(hash->listas[pos]))return false;
-	
+	if(hash->cantidad==0)return false;	
+	size_t pos = hashing(clave,hash->capacidad);	
 	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
-	if(!iter)return NULL;
-	
 	while(!lista_iter_al_final(iter)){
-		//const char* copia = ((campo_t*)lista_iter_ver_actual(iter))->clave;
-		if(((campo_t*)lista_iter_ver_actual(iter))->clave == clave){
-			lista_iter_destruir(iter);
+		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
 			return true;
-		}else{
-			lista_iter_avanzar(iter);
 		}
+		lista_iter_avanzar(iter);
 	}
-	lista_iter_destruir(iter);
 	return false;
 }
 
@@ -252,24 +220,21 @@ size_t hash_cantidad(const hash_t *hash){
 }
 
 void hash_destruir(hash_t *hash){
-	for(size_t i = 0 ; i<hash->capacidad ; i++){
-		while(!lista_esta_vacia(hash->listas[i])){
+	for(size_t i = 0 ; i<hash->cantidad ; i++){
+		/*while(!lista_esta_vacia(hash->listas[i])){
 			campo_t* campo = (campo_t*)lista_borrar_primero(hash->listas[i]);
-			if(hash->destruir_dato!=NULL){
-				hash->destruir_dato(campo->valor);
-			}
+		//	hash->destruir_dato(campo->valor);
 			free(campo);
-		}
+		}*/
 		lista_destruir(hash->listas[i],NULL);
 	}
-	free(hash->listas);
 	free(hash);
 }
 
-
+/*
 bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
 	
-	if( TAM_NUEVO < TAM[0] ){//Menor que el tamaño original
+	if( TAM_NUEVO < TAM ){//Menor que el tamaño original
 				return false;
 	}
 				
@@ -280,73 +245,144 @@ bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
 		}else{
 			return hash_copiar(hash,TAM_NUEVO,listas_nuevo);
 		}
-}
+}*/
 
-			
-		
-bool hash_copiar(hash_t* hash, size_t TAM_NUEVO/*, lista_t** listas_nuevo*/){
+bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 	
-	lista_t** listas_nuevo = malloc(TAM_NUEVO*sizeof(lista_t*));
-	if(!listas_nuevo)return false;
-	
-	//size_t i = 0;
-	for(size_t n = 0; n<TAM_NUEVO ; n++){
-		listas_nuevo[n] = lista_crear();
-		//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
-		//liberar las que ya estan creadas
-		if(listas_nuevo[n]==NULL){
-			for(n=n ; n > 0 ; n--){
-				free(listas_nuevo[n]);
-			}
-			free(listas_nuevo);	
-			return NULL;
-		}
+	hash_iter_t* hash_iter = hash_iter_crear(hash);
+	if(!hash_iter){
+		free(listas_nuevo);
+		return false;
 	}
-	for(size_t i = 0; i<hash->capacidad ; i++){
-		if(!lista_esta_vacia(hash->listas[i])){
+	size_t i = 0;
+	while(!hash_iter_al_final(hash_iter)){
+		if (lista_esta_vacia(hash->listas[i])){
+			hash_iter_avanzar(hash_iter);
+		}else{
 			lista_iter_t* lista_iter = lista_iter_crear(hash->listas[i]);
 			if(!lista_iter){
 				free (listas_nuevo);
+				hash_iter_destruir(hash_iter);
 				return false;
-			}	
-			while(!lista_esta_vacia(hash->listas[i])){
-				campo_t* campo = lista_iter_borrar(lista_iter);
+			}
+			while(!lista_iter_al_final(lista_iter)){//lista_esta_vacia
+				
+				campo_t* campo = lista_iter_ver_actual(lista_iter);
 				size_t pos = hashing(campo->clave,TAM_NUEVO);
 				if(!lista_insertar_ultimo(listas_nuevo[pos],campo))return false;
 				lista_iter_avanzar(lista_iter);
+				hash_iter_avanzar(hash_iter);
 			
 			}
+			lista_destruir(hash->listas[i],NULL);
 			lista_iter_destruir(lista_iter);
 		}
-		lista_destruir(hash->listas[i],NULL);
+		
 	}
+	hash_iter_destruir(hash_iter);
 	hash->listas = listas_nuevo;
 	hash->capacidad = TAM_NUEVO;
 	return true;
 }
 
 bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
-	
+	size_t dim = 0;
 	if(redimension==achicar){
-		if(hash->capacidad == primos[0])return NULL;
-	}else{	
-		size_t dim = 0;
+		if(hash->capacidad <= primos[0])return false;
 		if (hash->capacidad <= 800011){
-			for (size_t i=0 ; i<15; i++){
-				if(primos[i]==hash->capacidad){
-					dim = i+redimension;//si es achicar le resta 1 y si es agrandar le suma 1
+			for (int i=0 ; i<14; i++){
+				if (primos[i]==hash->capacidad);
+				dim = i-1;
+			}
+			lista_t** listas_nuevo = malloc(primos[dim]*sizeof(lista_t*));
+			if(listas_nuevo==NULL)return false;
+			for(int i = 0; i<primos[dim] ; i++){
+				listas_nuevo[i] = lista_crear();
+				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+				//liberar las que ya estan creadas
+				if(!listas_nuevo[i]){
+					for(i=i ; i > 0 ; i--){
+						free(listas_nuevo[i]);
+					}
+					free(listas_nuevo);	
+					return false;
 				}
 			}
-			//lista_t** listas_nuevo = malloc(primos[dim]*sizeof(lista_t*));
-			//if(listas_nuevo==NULL)return false;
-			return hash_copiar(hash,primos[dim]/*,listas_nuevo*/);
+			return hash_copiar(hash,primos[dim],listas_nuevo);
 		}else{
-			//lista_t** listas_nuevo = malloc(2*hash->capacidad*sizeof(lista_t*));
-			//if(listas_nuevo==NULL)return false;
-			return hash_copiar(hash,2*hash->capacidad/*,listas_nuevo*/);
+			if (hash->capacidad/2 <= 800011){
+				lista_t** listas_nuevo = malloc(primos[15]*sizeof(lista_t*));
+				for(int i = 0; i<primos[15] ; i++){
+					listas_nuevo[i] = lista_crear();
+					//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+					//liberar las que ya estan creadas
+					if(!listas_nuevo[i]){
+						for(i=i ; i > 0 ; i--){
+							free(listas_nuevo[i]);
+						}
+						free(listas_nuevo);	
+						return false;
+					}
+				}	
+				return hash_copiar(hash,primos[15],listas_nuevo);
+			}else{
+				lista_t** listas_nuevo = malloc(hash->capacidad*sizeof(lista_t*)/2);
+				if(listas_nuevo==NULL)return false;
+				for(int i = 0; i<(hash->capacidad)/2 ; i++){
+					listas_nuevo[i] = lista_crear();
+					//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+					//liberar las que ya estan creadas
+					if(!listas_nuevo[i]){
+						for(i=i ; i > 0 ; i--){
+							free(listas_nuevo[i]);
+						}
+						free(listas_nuevo);	
+						return false;
+					}
+				}
+				return hash_copiar(hash,(hash->capacidad)/2,listas_nuevo);
+			}
+		}
+	}else{
+		if (hash->capacidad <= 800011){
+			for (int i=0 ; i<14; i++){
+				if (primos[i]==hash->capacidad);
+				dim = i+1;
+			}
+			
+			lista_t** listas_nuevo = malloc(primos[dim]*sizeof(lista_t*));
+			if(listas_nuevo==NULL)return false;
+			for(int i = 0; i<primos[dim] ; i++){
+				listas_nuevo[i] = lista_crear();
+				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+				//liberar las que ya estan creadas
+				if(!listas_nuevo[i]){
+					for(i=i ; i > 0 ; i--){
+						free(listas_nuevo[i]);
+					}
+					free(listas_nuevo);	
+					return false;
+				}
+			}	
+			return hash_copiar(hash,primos[dim],listas_nuevo);
+		}else{
+			lista_t** listas_nuevo = malloc(2*hash->capacidad*sizeof(lista_t*));
+			if(listas_nuevo==NULL)return false;
+			for(int i = 0; i<2*(hash->capacidad) ; i++){
+				listas_nuevo[i] = lista_crear();
+				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+				//liberar las que ya estan creadas
+				if(!listas_nuevo[i]){
+					for(i=i ; i > 0 ; i--){
+						free(listas_nuevo[i]);
+					}
+					free(listas_nuevo);	
+					return false;
+				}
+			}	
+			return hash_copiar(hash,2*hash->capacidad,listas_nuevo);
 		}
 	}
-	return true;
 }
 
 /*
@@ -405,15 +441,12 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 		hash_iter->iter_lista = NULL;
 	}else{
 		size_t i = 0;
-		while(lista_esta_vacia(hash->listas[i]) && i < hash_iter->hash->capacidad-1){
+		while(lista_esta_vacia(hash->listas[i]) && i < hash_iter->hash->capacidad){
 			i++;
 		}
 		hash_iter->pos = i;
 		hash_iter->iter_lista = lista_iter_crear(hash->listas[i]);
-		if(!hash_iter->iter_lista){
-			free(hash_iter);
-			return NULL;
-		}
+		if(!hash_iter->iter_lista)return NULL;
 	}
 	return hash_iter;
 }	
@@ -421,11 +454,13 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 bool hash_iter_avanzar(hash_iter_t *iter){
 	
 	if(hash_iter_al_final(iter))return false;
-
-	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){
+	
+	iter->iterados++;
+	
+	if(lista_iter_al_final(iter->iter_lista)){
 		lista_iter_destruir(iter->iter_lista);
 		iter->pos++;
-		while(iter->pos < iter->hash->capacidad-1 && lista_esta_vacia(iter->hash->listas[iter->pos])){
+		while(lista_esta_vacia(iter->hash->listas[iter->pos])){//while(iter->hash->listas[iter->pos]==NULL){
 			iter->pos++;
 		}
 		iter->iter_lista = lista_iter_crear(iter->hash->listas[iter->pos]);
@@ -433,13 +468,11 @@ bool hash_iter_avanzar(hash_iter_t *iter){
 	}else{
 		if(!lista_iter_avanzar(iter->iter_lista)) return false;
 	}
-	iter->iterados++;
 	return true;
 }
 
 const char *hash_iter_ver_actual(const hash_iter_t *iter){
-	
-	if(hash_iter_al_final(iter)){
+	if(iter->hash->cantidad==0){
 		return NULL;
 	}
 	return ((campo_t*)lista_iter_ver_actual(iter->iter_lista))->clave;
