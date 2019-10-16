@@ -123,7 +123,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	if (campo == NULL)return false;
 	
 	size_t pos=hashing(clave,hash->capacidad);
-	//printf("Pos asignada por funcionde hashing es %ld\n", pos);
+	//printf("Pos asignada por funcion de hashing es %ld\n", pos);
 	
 	if(lista_esta_vacia(hash->listas[pos])){
 		lista_insertar_ultimo(hash->listas[pos], campo);
@@ -142,10 +142,11 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
 			hash->cantidad --;
 			campo_t* borrado = ((lista_iter_borrar(iter)));
-			if(hash->destruir_dato){
+			if(hash->destruir_dato != NULL){
 				hash->destruir_dato(borrado->valor);
-				insertado = true;
 			}
+			free((void*)borrado->clave);
+			free(borrado);
 			if(!lista_iter_insertar(iter,campo))return false;
 			insertado = true;
 			}
@@ -176,10 +177,16 @@ void *hash_borrar(hash_t *hash, const char *clave){
 		lista_iter_avanzar(iter);
 	}
 	if (lista_iter_al_final(iter)){
+		lista_iter_destruir(iter);
 		return NULL;
 	}
 	hash->cantidad--;
-	return ((campo_t*)lista_iter_borrar(iter))->valor;
+	campo_t *borrado = (campo_t*)lista_iter_borrar(iter);
+	void *dato = borrado->valor;
+	free((void*)borrado->clave);
+	free(borrado);
+	lista_iter_destruir(iter);
+	return dato;	
 }
 
 void *hash_obtener(const hash_t *hash, const char *clave){
@@ -208,10 +215,12 @@ bool hash_pertenece(const hash_t *hash, const char *clave){
 	lista_iter_t* iter = lista_iter_crear(hash->listas[pos]);
 	while(!lista_iter_al_final(iter)){
 		if (strcmp(((campo_t*)lista_iter_ver_actual(iter))->clave, clave) == 0){
+			lista_iter_destruir(iter);
 			return true;
 		}
 		lista_iter_avanzar(iter);
 	}
+	lista_iter_destruir(iter);
 	return false;
 }
 
@@ -220,14 +229,18 @@ size_t hash_cantidad(const hash_t *hash){
 }
 
 void hash_destruir(hash_t *hash){
-	for(size_t i = 0 ; i<hash->cantidad ; i++){
-		/*while(!lista_esta_vacia(hash->listas[i])){
+	for(size_t i = 0 ; i<hash->capacidad ; i++){
+		while(!lista_esta_vacia(hash->listas[i])){
 			campo_t* campo = (campo_t*)lista_borrar_primero(hash->listas[i]);
-		//	hash->destruir_dato(campo->valor);
+			if(hash->destruir_dato != NULL){
+				hash->destruir_dato(campo->valor);
+			}
+			free((void*)campo->clave);
 			free(campo);
-		}*/
+		}
 		lista_destruir(hash->listas[i],NULL);
 	}
+	free(hash->listas);
 	free(hash);
 }
 
@@ -455,13 +468,11 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 bool hash_iter_avanzar(hash_iter_t *iter){
 	
 	if(hash_iter_al_final(iter))return false;
-	
-	iter->iterados++;
-	
-	if(lista_iter_al_final(iter->iter_lista)){
+
+	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){
 		lista_iter_destruir(iter->iter_lista);
 		iter->pos++;
-		while(lista_esta_vacia(iter->hash->listas[iter->pos])){//while(iter->hash->listas[iter->pos]==NULL){
+		while(iter->pos < iter->hash->capacidad-1 && lista_esta_vacia(iter->hash->listas[iter->pos])){
 			iter->pos++;
 		}
 		iter->iter_lista = lista_iter_crear(iter->hash->listas[iter->pos]);
@@ -469,11 +480,13 @@ bool hash_iter_avanzar(hash_iter_t *iter){
 	}else{
 		if(!lista_iter_avanzar(iter->iter_lista)) return false;
 	}
+	iter->iterados++;
 	return true;
 }
 
+
 const char *hash_iter_ver_actual(const hash_iter_t *iter){
-	if(iter->hash->cantidad==0){
+	if(hash_iter_al_final(iter)){
 		return NULL;
 	}
 	return ((campo_t*)lista_iter_ver_actual(iter->iter_lista))->clave;
