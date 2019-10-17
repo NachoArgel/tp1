@@ -4,14 +4,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-//#define TAM 32
 #define achicar -1
 #define agrandar 1
 const int primos[] = {41,101,211,401,809,1601,3209,6421,12809,25603,50021,100003,200003,
 400009,800011};
 
 
-
+bool hash_redimensionar(hash_t* hash, int redimension );
 
 typedef struct campo{
 	const char* clave;
@@ -67,17 +66,52 @@ size_t hashing(const char *cad, size_t largo){
    return(valor%largo);
 }
 
-/*unsigned long hashing(const char *str){
-	unsigned long hashing = 5381;
-	int c = *str++;
-
-	while (c == *str++){
-		c = *str++;
-		hashing = ((hashing << 5) + hashing) + c; // hashing * 33 + c 
+/* FUNCIONES HASH QUE NO  NOS SIRVIERON
+unsigned long hashing(const char *str, size_t largo){
+	int hash = 7;
+	for (int i = 0; i < strlen(str); i++) {
+    	hash = hash*31 + i;
 	}
-	return hashing;
+	return(hash%largo);
  }*/
-
+/* __uint32_t hashing(const char* key, size_t len)
+{
+	__uint32_t h = 2;
+	if (len > 3) {
+		size_t i = len >> 2;
+		do {
+			__uint32_t k;
+			memcpy(&k, key, sizeof(__uint32_t));
+			key += sizeof(__uint32_t);
+			k *= 0xcc9e2d51;
+			k = (k << 15) | (k >> 17);
+			k *= 0x1b873593;
+			h ^= k;
+			h = (h << 13) | (h >> 19);
+			h = h * 5 + 0xe6546b64;
+		} while (--i);
+	}
+	if (len & 3) {
+		size_t i = len & 3;
+		__uint32_t k = 0;
+		do {
+			k <<= 8;
+			k |= key[i - 1];
+		} while (--i);
+		k *= 0xcc9e2d51;
+		k = (k << 15) | (k >> 17);
+		k *= 0x1b873593;
+		h ^= k;
+	}
+	h ^= (__uint32_t)(len);
+	h ^= h >> 16;
+	h *= 0x85ebca6b;
+	h ^= h >> 13;
+	h *= 0xc2b2ae35;
+	h ^= h >> 16;
+	return (size_t)(h%(__uint32_t)len);
+}
+*/
 /*****************************************************************
  *                         PRIMITIVAS HASH                       *
  * ***************************************************************/
@@ -275,16 +309,13 @@ bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 		}
 		
 	}
-	printf("elementos :%lu \n",elem_i);
-	printf("listas: %lu \n",hash->cantidad);
-	printf("Nuevas listas :%lu \n ",TAM_NUEVO);
 	free(hash->listas);
 	hash->listas = listas_nuevo;
 	hash->capacidad = TAM_NUEVO;
 	return true;
 }
 
-/*
+/* REDIMENSIONES ANTERIORES A PRIMOS
 bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
 	
 	if( TAM_NUEVO < TAM ){//Menor que el tamaño original
@@ -364,7 +395,6 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 					return false;
 				}
 			}
-			printf("ACHICO\n");
 			return hash_copiar(hash,primos[dim],listas_nuevo);
 		}else{
 			if (hash->capacidad/2 <= 800011){
@@ -443,7 +473,7 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 	}
 }
 
-/*
+/* 		
 		hash_iter_t* hash_iter = hash_iter_crear(hash);
 		if(!hash_iter){
 			free(listas_nuevo);
