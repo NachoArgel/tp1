@@ -244,28 +244,14 @@ void hash_destruir(hash_t *hash){
 	free(hash);
 }
 
-/*
-bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
-	
-	if( TAM_NUEVO < TAM ){//Menor que el tamaño original
-				return false;
-	}
-				
-	lista_t** listas_nuevo = malloc(TAM_NUEVO*sizeof(lista_t*));
-		
-		if ( listas_nuevo == NULL ){
-			return false;
-		}else{
-			return hash_copiar(hash,TAM_NUEVO,listas_nuevo);
-		}
-}*/
 
 bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 	
 	size_t lista_i = 0;
 	size_t elem_i = 0;
-	while(elem_i < hash->cantidad){
+	while(lista_i < hash->capacidad){
 		if (lista_esta_vacia(hash->listas[lista_i])){
+			lista_destruir(hash->listas[lista_i],NULL);
 			lista_i++;
 		}else{
 			lista_iter_t* lista_iter = lista_iter_crear(hash->listas[lista_i]);
@@ -292,10 +278,67 @@ bool hash_copiar(hash_t* hash, size_t TAM_NUEVO, lista_t** listas_nuevo){
 	printf("elementos :%lu \n",elem_i);
 	printf("listas: %lu \n",hash->cantidad);
 	printf("Nuevas listas :%lu \n ",TAM_NUEVO);
+	free(hash->listas);
 	hash->listas = listas_nuevo;
 	hash->capacidad = TAM_NUEVO;
 	return true;
 }
+
+/*
+bool hash_redimensionar(hash_t* hash, size_t TAM_NUEVO ){//SIN PRIMOS
+	
+	if( TAM_NUEVO < TAM ){//Menor que el tamaño original
+				return false;
+	}
+				
+	lista_t** listas_nuevo = malloc(TAM_NUEVO*sizeof(lista_t*));
+		
+		if ( listas_nuevo == NULL ){
+			return false;
+		}else{
+			return hash_copiar(hash,TAM_NUEVO,listas_nuevo);
+		}
+}*/
+
+/*
+bool hash_redimensionar(hash_t* hash, int redimension ){//SIN PRIMOS
+	
+	if( redimension == achicar ){
+		if(hash->capacidad <= primos[0]) return false;
+		lista_t** listas_nuevo = malloc((hash->capacidad/2)*sizeof(lista_t*));
+		if(!listas_nuevo)return false;
+		for(int i = 0 ; i<(hash->capacidad/2) ; i++){
+			listas_nuevo[i] = lista_crear();
+				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+				//liberar las que ya estan creadas
+				if(!listas_nuevo[i]){
+					for(i=i ; i > 0 ; i--){
+						free(listas_nuevo[i]);
+					}
+					free(listas_nuevo);	
+					return false;
+				}
+		}
+		return hash_copiar(hash, (hash->capacidad/2) , listas_nuevo); 
+	}else{	
+		lista_t** listas_nuevo = malloc(2*hash->capacidad*sizeof(lista_t*));
+		if ( listas_nuevo == NULL ) return false;
+		for(int i = 0 ; i<(hash->capacidad/2) ; i++){
+			listas_nuevo[i] = lista_crear();
+				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
+				//liberar las que ya estan creadas
+				if(!listas_nuevo[i]){
+					for(i=i ; i > 0 ; i--){
+						free(listas_nuevo[i]);
+					}
+					free(listas_nuevo);	
+					return false;
+				}
+		}
+
+		return hash_copiar(hash,2*hash->capacidad,listas_nuevo);
+			
+}*/
 
 bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 	size_t dim = 0;
@@ -321,6 +364,7 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 					return false;
 				}
 			}
+			printf("ACHICO\n");
 			return hash_copiar(hash,primos[dim],listas_nuevo);
 		}else{
 			if (hash->capacidad/2 <= 800011){
