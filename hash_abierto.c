@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 #define achicar -1
 #define agrandar 1
 const int primos[] = {41,101,211,401,809,1601,3209,6421,12809,25603,50021,100003,200003,
@@ -55,6 +56,88 @@ struct hash_iter{
     lista_iter_t* iter_lista;
     const hash_t* hash;
 };
+size_t hashing(const char *word, size_t len)
+{       int sum = 0;
+        for (int k = 0; k < strlen(word); k++){
+            int res = 5*sum;
+            sum = res + word[k];
+		}
+        return sum % len; 
+}
+
+/* FUNCIONES HASH QUE NO  NOS SIRVIERON
+
+
+
+size_t hashing(const char *word, size_t len)
+{
+   int seed = 131; 
+   size_t hash = 0;
+   for(int i = 0; i < strlen(word); i++)
+   {
+      hash = (hash * seed) + word[i];
+   }
+   return hash % len;
+}
+LA MEJOR:
+size_t hashing(char const *input, size_t len) { 
+
+    const int ret_size = 32;
+    size_t ret = 0x555555;
+    const int per_char = 7;
+
+    while (*input) { 
+        ret ^= *input++;
+        ret = ((ret << per_char) | (ret >> (ret_size - per_char)));
+   }
+   return ret%len;
+}
+* 
+size_t hashing(const char *key, size_t len)
+{
+	if(key == NULL){
+		return 0;
+	}
+    size_t hash, i;
+    for(hash = i = 0; i < len; ++i)
+    {
+        hash += 67;
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    return hash%len;
+}
+size_t hashing(const char *s, size_t len)
+{
+    size_t num;
+    srand((unsigned int)time(NULL));
+	num = rand() % len;
+    return num;
+}
+size_t hashing(const char *s , size_t largo)
+{
+	size_t len = strlen(s);	
+	size_t i = 0;
+    size_t hashval;
+
+	for (hashval = 0; i<len ; i++){
+		int l = s[i];
+		hashval = l + 17*hashval;
+	}
+	return hashval % largo;
+
+}
+size_t hashing(const char *s, size_t len)
+{	
+	size_t i;
+	for( i=0; *s; s++ ){
+		i = 131*i + *s;
+	}
+	return( i % len );
+}
 
 size_t hashing(const char *cad, size_t largo){
    size_t valor;
@@ -66,7 +149,7 @@ size_t hashing(const char *cad, size_t largo){
    return(valor%largo);
 }
 
-/* FUNCIONES HASH QUE NO  NOS SIRVIERON
+
 unsigned long hashing(const char *str, size_t largo){
 	int hash = 7;
 	for (int i = 0; i < strlen(str); i++) {
@@ -141,7 +224,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato){
 	}	
 	hash->destruir_dato = destruir_dato;
 	hash->cantidad = 0;
-	hash->capacidad = primos[0];//hash->capacidad = TAM;
+	hash->capacidad = primos[0];
 	return hash;
 }
 
@@ -157,7 +240,7 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 	if (campo == NULL)return false;
 	
 	size_t pos=hashing(clave,hash->capacidad);
-	//printf("Pos asignada por funcion de hashing es %ld\n", pos);
+	//printf("Pos asignada por funcion de hashing %ld\n", pos);
 	
 	if(lista_esta_vacia(hash->listas[pos])){
 		lista_insertar_ultimo(hash->listas[pos], campo);
@@ -401,8 +484,6 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 				lista_t** listas_nuevo = malloc(primos[15]*sizeof(lista_t*));
 				for(int i = 0; i<primos[15] ; i++){
 					listas_nuevo[i] = lista_crear();
-					//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
-					//liberar las que ya estan creadas
 					if(!listas_nuevo[i]){
 						for(i=i ; i > 0 ; i--){
 							free(listas_nuevo[i]);
@@ -417,8 +498,6 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 				if(listas_nuevo==NULL)return false;
 				for(int i = 0; i<(hash->capacidad)/2 ; i++){
 					listas_nuevo[i] = lista_crear();
-					//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
-					//liberar las que ya estan creadas
 					if(!listas_nuevo[i]){
 						for(i=i ; i > 0 ; i--){
 							free(listas_nuevo[i]);
@@ -442,8 +521,6 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 			if(listas_nuevo==NULL)return false;
 			for(int i = 0; i<primos[dim] ; i++){
 				listas_nuevo[i] = lista_crear();
-				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
-				//liberar las que ya estan creadas
 				if(!listas_nuevo[i]){
 					for(i=i ; i > 0 ; i--){
 						free(listas_nuevo[i]);
@@ -458,8 +535,6 @@ bool hash_redimensionar(hash_t* hash, int redimension ){//CON PRIMOS
 			if(listas_nuevo==NULL)return false;
 			for(int i = 0; i<2*(hash->capacidad) ; i++){
 				listas_nuevo[i] = lista_crear();
-				//Si por alguna razon no puedo crear una lista para la tabla, tengo que 
-				//liberar las que ya estan creadas
 				if(!listas_nuevo[i]){
 					for(i=i ; i > 0 ; i--){
 						free(listas_nuevo[i]);
