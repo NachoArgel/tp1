@@ -152,7 +152,15 @@ campo_t *hash_buscar(const hash_t *hash, const char *clave, lista_iter_t *iter){
 	}
 	return NULL;	
 }
-
+int buscar_prox_listas(hash_iter_t* hash_iter,size_t i){
+	while(lista_esta_vacia(hash_iter->hash->listas[i]) && i < hash_iter->hash->capacidad-i){
+		i++;
+	}
+	if (i == hash_iter->hash->capacidad-i)return false;
+	hash_iter->iter_lista = lista_iter_crear(hash_iter->hash->listas[i]);
+	if(!hash_iter->iter_lista)return false;
+	return (int)i;
+}
 /*****************************************************************
  *                         PRIMITIVAS HASH                       *
  * ***************************************************************/
@@ -291,14 +299,11 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 	
 	if(hash->cantidad==0){
 		hash_iter->iter_lista = NULL;
-	}else{//extraigan esto en una funcion auxiliar buscar_prox_lista
-		size_t i = 0;
-		while(lista_esta_vacia(hash->listas[i]) && i < hash_iter->hash->capacidad){
-			i++;
-		}
+	}else{
+		int i = buscar_prox_listas(hash_iter,0);
+		if (i == false)return NULL;
 		hash_iter->pos = i;
-		hash_iter->iter_lista = lista_iter_crear(hash->listas[i]);
-		if(!hash_iter->iter_lista)return NULL;
+		
 	}
 	return hash_iter;
 }	
@@ -310,11 +315,17 @@ bool hash_iter_avanzar(hash_iter_t *iter){
 	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){//if (lista_iter_al_final(iter->iter_lista))
 		lista_iter_destruir(iter->iter_lista);
 		iter->pos++;
-		while(iter->pos < iter->hash->capacidad-1 && lista_esta_vacia(iter->hash->listas[iter->pos])){//reutilicen funcion de buscar_prox
+		//ACA ROMPE NO SE PORQUE
+		int i = buscar_prox_listas(iter,iter->pos);
+		if (i == false)return NULL;
+		campo_t* a = (campo_t*)(lista_iter_ver_actual(iter->iter_lista));
+		if (!a->clave)printf("aaaa");
+		iter->pos = iter->pos+i;
+		/*while(iter->pos < iter->hash->capacidad-1 && lista_esta_vacia(iter->hash->listas[iter->pos])){//reutilicen funcion de buscar_prox
 			iter->pos++;
 		}
 		iter->iter_lista = lista_iter_crear(iter->hash->listas[iter->pos]);
-		if(!iter->iter_lista)return false;
+		if(!iter->iter_lista)return false;*/
 	}else{
 		if(!lista_iter_avanzar(iter->iter_lista)) return false;
 	}
