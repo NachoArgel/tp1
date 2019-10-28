@@ -56,16 +56,16 @@ campo_t* campo_crear(const char* clave, void* valor){
 	return campo;
 }
 
-void campo_destruir(campo_t *campo, hash_t *hash){
-		if(hash->destruir_dato){
-			hash->destruir_dato(campo->valor);
+void campo_destruir(campo_t *campo, hash_destruir_dato_t destruir_dato){
+		if(destruir_dato){
+			destruir_dato(campo->valor);
 		}
 		free((void*)campo->clave);
 		free(campo);
 }
 
 /*****************************************************************
- *                      FUNCIONES AUXILIARES                     *
+ *                   FUNCIONES AUXILIARES HASH                   *
  * ***************************************************************/
 
 size_t hashing(const char *word, size_t len)
@@ -81,7 +81,7 @@ void destruir_listas(lista_t** listas, size_t i, hash_t *hash){
 	for(i = i ;i > 0 ; i--){
 		while(!lista_esta_vacia(listas[i])){
 			campo_t* campo = (campo_t*)lista_borrar_primero(listas[i]);
-			campo_destruir(campo,hash);
+			campo_destruir(campo,hash->destruir_dato);
 		}
 		lista_destruir(listas[i],NULL);
 	}
@@ -152,15 +152,7 @@ campo_t *hash_buscar(const hash_t *hash, const char *clave, lista_iter_t *iter){
 	}
 	return NULL;	
 }
-int buscar_prox_listas(hash_iter_t* hash_iter,size_t i){
-	while(lista_esta_vacia(hash_iter->hash->listas[i]) && i < hash_iter->hash->capacidad-i){
-		i++;
-	}
-	if (i == hash_iter->hash->capacidad-i)return false;
-	hash_iter->iter_lista = lista_iter_crear(hash_iter->hash->listas[i]);
-	if(!hash_iter->iter_lista)return false;
-	return (int)i;
-}
+
 /*****************************************************************
  *                         PRIMITIVAS HASH                       *
  * ***************************************************************/
@@ -206,13 +198,13 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato){
 
 	lista_iter_t *iter = lista_iter_crear(hash->listas[pos]);
 	if(!iter){
-		campo_destruir(campo,hash);
+		campo_destruir(campo,hash->destruir_dato);
 		return NULL;
 	}
 	
 	campo_t *viejo = hash_buscar(hash,clave,iter);
 	if(viejo != NULL){
-		campo_destruir(viejo,hash);
+		campo_destruir(viejo,hash->destruir_dato);
 		lista_iter_borrar(iter);
 		hash->cantidad--;
 	}
@@ -240,7 +232,7 @@ void *hash_borrar(hash_t *hash, const char *clave){
 	}
 	void *dato = a_borrar->valor;
 	lista_iter_borrar(iter);
-	campo_destruir(a_borrar,hash);	
+	campo_destruir(a_borrar,NULL);	
 	hash->cantidad--;
 	
 	lista_iter_destruir(iter);
@@ -285,6 +277,21 @@ void hash_destruir(hash_t *hash){
 	free(hash);
 }
 
+
+/*****************************************************************
+ *                FUNCIONES AUXILIARES ITERADOR                  *
+ * ***************************************************************/
+ 
+size_t buscar_prox_listas(hash_iter_t* hash_iter,size_t i){
+	while(i < hash_iter->hash->capacidad-1 && lista_esta_vacia(hash_iter->hash->listas[i])){
+		i++;
+	}
+	if(i >= hash_iter->hash->capacidad)return false;
+	hash_iter->iter_lista = lista_iter_crear(hash_iter->hash->listas[i]);
+	if(!hash_iter->iter_lista)return false;
+	return i;
+}
+
 /****************************************************************
  *                PRIMITIVAS DEL ITERADOR                       *
  ****************************************************************/
@@ -300,32 +307,23 @@ hash_iter_t *hash_iter_crear(const hash_t *hash){
 	if(hash->cantidad==0){
 		hash_iter->iter_lista = NULL;
 	}else{
-		int i = buscar_prox_listas(hash_iter,0);
-		if (i == false)return NULL;
+		size_t i = buscar_prox_listas(hash_iter,0);
+		if (!i)return NULL;
 		hash_iter->pos = i;
-		
+		if(!hash_iter->pos)return NULL;
 	}
 	return hash_iter;
 }	
-	
+
 bool hash_iter_avanzar(hash_iter_t *iter){
 	
 	if(hash_iter_al_final(iter))return false;
 
-	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){//if (lista_iter_al_final(iter->iter_lista))
+	if(lista_iter_ver_actual(iter->iter_lista) == lista_ver_ultimo(iter->hash->listas[iter->pos])){
 		lista_iter_destruir(iter->iter_lista);
 		iter->pos++;
-		//ACA ROMPE NO SE PORQUE
-		int i = buscar_prox_listas(iter,iter->pos);
-		if (i == false)return NULL;
-		campo_t* a = (campo_t*)(lista_iter_ver_actual(iter->iter_lista));
-		if (!a->clave)printf("aaaa");
-		iter->pos = iter->pos+i;
-		/*while(iter->pos < iter->hash->capacidad-1 && lista_esta_vacia(iter->hash->listas[iter->pos])){//reutilicen funcion de buscar_prox
-			iter->pos++;
-		}
-		iter->iter_lista = lista_iter_crear(iter->hash->listas[iter->pos]);
-		if(!iter->iter_lista)return false;*/
+		iter->pos = buscar_prox_listas(iter,iter->pos);
+		if(!iter->pos)return false;
 	}else{
 		if(!lista_iter_avanzar(iter->iter_lista)) return false;
 	}
