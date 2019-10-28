@@ -78,14 +78,14 @@ size_t hashing(const char *word, size_t len)
 }
 
 void destruir_listas(lista_t** listas, size_t i, hash_t *hash){
-	for(i = i ;i > 0 ; i--){
+	
+for(size_t n = 0;n <= i ; n++){
 		while(!lista_esta_vacia(listas[i])){
 			campo_t* campo = (campo_t*)lista_borrar_primero(listas[i]);
 			campo_destruir(campo,hash->destruir_dato);
 		}
 		lista_destruir(listas[i],NULL);
 	}
-	lista_destruir(listas[i],NULL);
 	free(listas);
 }
 
